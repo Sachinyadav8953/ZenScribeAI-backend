@@ -3,7 +3,7 @@ from typing import Optional
 from uuid import UUID
 from datetime import datetime
 from models.user import UserRole, Specialization
-
+from utils.passwordValidators import validate_password_strength, validate_password_match
 
 #signup
 class UserCreate(BaseModel):
@@ -20,19 +20,14 @@ class UserCreate(BaseModel):
     @field_validator("confirm_password")
     @classmethod
     def passwords_must_match(cls, v, info):
-        if "password" in info.data and v != info.data["password"]:
-            raise ValueError("Passwords do not match")
-        return v
+        if "password" in info.data:
+            validate_password_match(info.data["password"], v) 
+        return v  
 
     @field_validator("password")
     @classmethod
     def password_strength(cls, v):
-        if not any(c.isupper() for c in v):
-            raise ValueError("Password must contain at least one uppercase letter")
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one number")
-        if not any(c in "!@#$%^&*()_+-=[]{}|;':\",./<>?" for c in v):
-            raise ValueError("Password must contain at least one special character")
+        validate_password_strength(v)   
         return v
 
     @field_validator("specialization")
@@ -64,19 +59,14 @@ class ResetPasswordRequest(BaseModel):
     @field_validator("new_password")
     @classmethod
     def password_strength(cls, v):
-        if not any(c.isupper() for c in v):
-            raise ValueError("Password must contain at least one uppercase letter")
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one number")
-        if not any(c in "!@#$%^&*()_+-=[]{}|;':\",./<>?" for c in v):
-            raise ValueError("Password must contain at least one special character")
+        validate_password_strength(v)
         return v
 
     @field_validator("confirm_new_password")
     @classmethod
     def passwords_must_match(cls, v, info):
-        if "new_password" in info.data and v != info.data["new_password"]:
-            raise ValueError("Passwords do not match")
+        if "new_password" in info.data:
+            validate_password_match(info.data["new_password"], v)
         return v
 
 
