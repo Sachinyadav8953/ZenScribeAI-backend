@@ -1,11 +1,13 @@
 import uuid
 import enum
+from datetime import datetime
 from sqlalchemy import (
     Column, String, Boolean,
     DateTime, Enum as SAEnum, Integer, ForeignKey
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
+from sqlalchemy.orm import Mapped
 from db.session import Base
  
  
@@ -28,39 +30,39 @@ class Specialization(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
  
-    id      = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    uuid    = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False, index=True)
+    id: Mapped[int] = Column(Integer, primary_key=True, autoincrement=True, index=True)  # type: ignore
+    uuid: Mapped[uuid.UUID] = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False, index=True)  # type: ignore
  
-    full_name       = Column(String(100), nullable=False)
-    email           = Column(String(255), nullable=False, unique=True, index=True)
-    hashed_password = Column(String(255), nullable=False)
+    full_name: Mapped[str] = Column(String(100), nullable=False)  # type: ignore
+    email: Mapped[str] = Column(String(255), nullable=False, unique=True, index=True)  # type: ignore
+    hashed_password: Mapped[str] = Column(String(255), nullable=False)  # type: ignore
  
-    role             = Column(SAEnum(UserRole),        nullable=False, default=UserRole.DOCTOR)
-    specialization   = Column(SAEnum(Specialization),  nullable=True)
-    license_number   = Column(String(50),  nullable=True, unique=True)
-    license_verified = Column(Boolean,     default=False, nullable=False)
+    role: Mapped[UserRole] = Column(SAEnum(UserRole),        nullable=False, default=UserRole.DOCTOR)  # type: ignore
+    specialization: Mapped[Specialization | None] = Column(SAEnum(Specialization),  nullable=True)  # type: ignore
+    license_number: Mapped[str | None] = Column(String(50),  nullable=True, unique=True)  # type: ignore
+    license_verified: Mapped[bool] = Column(Boolean,     default=False, nullable=False)  # type: ignore
     hospital_name    = Column(String(150), nullable=True)
     phone_number     = Column(String(20),  nullable=True)
     profile_image    = Column(String(500), nullable=True)      
  
   
-    is_email_verified          = Column(Boolean,                default=False, nullable=False)
-    email_verification_token   = Column(String(255),            nullable=True)
-    email_verification_expires = Column(DateTime(timezone=True), nullable=True)
+    is_email_verified: Mapped[bool] = Column(Boolean,                default=False, nullable=False)  # type: ignore
+    email_verification_token: Mapped[str | None] = Column(String(255),            nullable=True)  # type: ignore
+    email_verification_expires: Mapped[datetime | None] = Column(DateTime(timezone=True), nullable=True)  # type: ignore
  
-    reset_password_token   = Column(String(255),            nullable=True)
-    reset_password_expires = Column(DateTime(timezone=True), nullable=True)
+    reset_password_token: Mapped[str | None] = Column(String(255),            nullable=True)  # type: ignore
+    reset_password_expires: Mapped[datetime | None] = Column(DateTime(timezone=True), nullable=True)  # type: ignore
  
-    is_2fa_enabled    = Column(Boolean,     default=False, nullable=False)
-    two_factor_secret = Column(String(255), nullable=True)  
+    is_2fa_enabled: Mapped[bool] = Column(Boolean,     default=False, nullable=False)  # type: ignore
+    two_factor_secret: Mapped[str | None] = Column(String(255), nullable=True)  # type: ignore
  
-    is_active  = Column(Boolean, default=True,  nullable=False)
-    is_deleted = Column(Boolean, default=False, nullable=False)     
-    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    is_active: Mapped[bool] = Column(Boolean, default=True,  nullable=False)  # type: ignore
+    is_deleted: Mapped[bool] = Column(Boolean, default=False, nullable=False)  # type: ignore
+    deleted_at: Mapped[datetime | None] = Column(DateTime(timezone=True), nullable=True)  # type: ignore
  
-    last_login        = Column(DateTime(timezone=True), nullable=True)
-    last_login_ip     = Column(String(45),  nullable=True)      
-    last_login_device = Column(String(255), nullable=True)      
+    last_login: Mapped[datetime | None] = Column(DateTime(timezone=True), nullable=True)  # type: ignore
+    last_login_ip: Mapped[str | None] = Column(String(45),  nullable=True)  # type: ignore
+    last_login_device: Mapped[str | None] = Column(String(255), nullable=True)  # type: ignore      
  
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
