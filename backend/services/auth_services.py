@@ -1,13 +1,15 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone,timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from fastapi import HTTPException, status
 from models.user import User
-from schemas.user import UserCreate,UserLogin,TokenResponse
+from schemas.user import UserCreate,UserLogin,TokenResponse,ResetPasswordRequest
 from utils.password import hash_password,verify_password
 from utils.token import create_access_token,create_refresh_token
-
-
+from utils.email import send_reset_password_email
+import secrets
+from config import settings
+#Sign Up
 async def register_user(user_data:UserCreate, db: AsyncSession)->User:
     result=await db.execute(select(User).where(User.email==user_data.email))
     existing_user=result.scalar_one_or_none()
@@ -35,7 +37,7 @@ async def register_user(user_data:UserCreate, db: AsyncSession)->User:
     return new_user
 
 
-
+#Sign In
 async def login_user(
     user_data: UserLogin,
     db: AsyncSession,
@@ -94,4 +96,43 @@ async def login_user(
         token_type    = "bearer"
     )
 
+
+#forget Password
+
+async def forgot_password(email: str, db: AsyncSession) -> dict:
+    result =await db.execute(select(User).where(User.email==email))
+    user=result.scalar_one_or_none()
+    if not user:
+        return {"message": "If this email exists you will receive a reset link"}
+    
+    reset_token = secrets.token_urlsafe(32)
+    user.reset_password_token   = reset_token
+    user.reset_password_expires = datetime.now(timezone.utc) + timedelta(
+        minutes=settings.PASSWORD_RESET_EXPIRE_MINUTES
+    )
+    await db.commit()
+    await send_reset_password_email(user.email,reset_token)
+    return {"message": "If this email exists you will receive a reset link"}
+
+
+async def reset_password(reset_data: ResetPasswordRequest, db: AsyncSession) -> dict:
+    result =await db.execute(select(User).where(User.reset_password_token==reset_data.token))
+    user=result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Invalid or expired reset token")
+    
+    if user.reset_password_expires is None or datetime.now(timezone.utc) > user.reset_password_expires:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reset token has expired. Please request a new one."
+        ) 
+
+    user.hashed_password = hash_password(reset_data.new_password)
+
+   
+    user.reset_password_token   = None
+    user.reset_password_expires = None
+
+    await db.commit()
+    return {"message":"Your password has been reset please login again"}        
     
