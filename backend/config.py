@@ -29,7 +29,18 @@ class Settings(BaseSettings):
         "env_file": ".env",
         "env_file_encoding": "utf-8",
         "extra": "ignore",
-    }
+    }   
+    #Email
+   
 
+    MAIL_USERNAME: str      = ""
+    MAIL_PASSWORD: str      = ""
+    MAIL_FROM: str          = "noreply@doctorzenz.com"
+    MAIL_FROM_NAME: str     = "Doctor_zenZ"
+    MAIL_PORT: int          = 587
+    MAIL_SERVER: str        = "smtp.gmail.com"
+    MAIL_STARTTLS: bool     = True
+    MAIL_SSL_TLS: bool      = False
+    PASSWORD_RESET_EXPIRE_MINUTES: int = 15
 
 settings = Settings()
