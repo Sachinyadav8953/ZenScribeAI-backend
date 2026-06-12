@@ -2,7 +2,7 @@ import uuid as uuid_module
 import enum
 from datetime import datetime
 from sqlalchemy import (
-    Column, String, Boolean,
+    String, Boolean,
     DateTime, Enum as SAEnum, Integer, ForeignKey
 )
 from sqlalchemy.dialects.postgresql import UUID
