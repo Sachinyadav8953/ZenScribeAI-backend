@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from routes.auth import router
+from routes.auth import router as auth_router
 from db.session import init_db
+from routes.consultation import router as consultation_router
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -9,8 +11,8 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(router)
-
+app.include_router(auth_router)
+app.include_router(consultation_router)
 @app.get("/")
 def root():
     return {"message":"Zenscribe Backend is running"}
