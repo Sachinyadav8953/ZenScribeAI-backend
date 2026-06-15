@@ -3,7 +3,8 @@ from fastapi import HTTPException, status
 from models.consultation import Consultation
 from models.user import User
 from schemas.consultation import ConsultationCreate, ConsultationResponse,ConsultationUpdate,ConsultationStatus
-from sqlalchemy import select,Sequence
+from sqlalchemy import select
+from typing import Sequence
 from datetime import datetime, timezone
 
 async def start_consultation(
@@ -183,5 +184,5 @@ async def delete_consultation(
 
     await db.delete(consultation)
     await db.commit()
-
     return {"message": "Consultation deleted successfully"}
+    

@@ -48,7 +48,7 @@ async def update_consultation_route(
 
 
 
-@router.get("/",status_code=status.HTTP_200_OK,response_model=list)
+@router.get("/",status_code=status.HTTP_200_OK,response_model=list[ConsultationResponse])
 
 async def get_all_consultations_route(db:AsyncSession=Depends(get_db),current_doctor:User=Depends(get_current_doctor)):
     return await get_all_consultations(current_doctor,db)
