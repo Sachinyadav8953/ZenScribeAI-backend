@@ -3,7 +3,8 @@ from fastapi import HTTPException, status
 from models.consultation import Consultation
 from models.user import User
 from schemas.consultation import ConsultationCreate, ConsultationResponse,ConsultationUpdate,ConsultationStatus
-
+from sqlalchemy import select,Sequence
+from datetime import datetime, timezone
 
 async def start_consultation(
     data: ConsultationCreate,
@@ -31,8 +32,6 @@ async def start_consultation(
 
 
 
-
-from sqlalchemy import select
 
 
 async def update_consultation(
@@ -88,3 +87,101 @@ async def update_consultation(
     await db.refresh(consultation)
 
     return consultation
+
+
+
+async def get_all_consultations(
+    current_doctor: User,
+    db: AsyncSession
+) -> Sequence[Consultation]:
+
+    result = await db.execute(
+        select(Consultation)
+        .where(Consultation.doctor_id == str(current_doctor.uuid))
+        .order_by(Consultation.created_at.desc())   
+    )
+    return result.scalars().all()
+
+
+
+async def get_one_consultation(consultation_uuid:str,current_doctor:User,db:AsyncSession)->Consultation:
+    result=await db.execute(select(Consultation).where(Consultation.uuid==consultation_uuid))
+    consultation=result.scalar_one_or_none()
+    if not consultation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Consultation not found")
+
+    
+    if str(consultation.doctor_id)!=str(current_doctor.uuid):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not authorize to view this consultation")
+
+
+    return consultation
+
+
+
+async def end_consultation(
+    consultation_uuid: str,
+    current_doctor: User,
+    db: AsyncSession
+) -> Consultation:
+
+    result = await db.execute(
+        select(Consultation).where(Consultation.uuid == consultation_uuid)
+    )
+    consultation = result.scalar_one_or_none()
+
+    if not consultation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Consultation not found"
+        )
+
+    if str(consultation.doctor_id) != str(current_doctor.uuid):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to end this consultation"
+        )
+
+    if consultation.status != ConsultationStatus.IN_PROGRESS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Consultation is already ended or cancelled"
+        )
+
+    consultation.status   = ConsultationStatus.COMPLETED
+    consultation.ended_at = datetime.now(timezone.utc)
+
+    await db.commit()
+    await db.refresh(consultation)
+
+    return consultation
+
+
+
+async def delete_consultation(
+    consultation_uuid: str,
+    current_doctor: User,
+    db: AsyncSession
+) -> dict:
+
+    result = await db.execute(
+        select(Consultation).where(Consultation.uuid == consultation_uuid)
+    )
+    consultation = result.scalar_one_or_none()
+
+    if not consultation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Consultation not found"
+        )
+
+    if str(consultation.doctor_id) != str(current_doctor.uuid):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to delete this consultation"
+        )
+
+    await db.delete(consultation)
+    await db.commit()
+
+    return {"message": "Consultation deleted successfully"}
