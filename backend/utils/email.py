@@ -1,5 +1,3 @@
-# utils/email.py
-
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from config import settings
 
@@ -7,7 +5,7 @@ from config import settings
 
 mail_config = ConnectionConfig(
     MAIL_USERNAME   = settings.MAIL_USERNAME,
-    MAIL_PASSWORD   = settings.MAIL_PASSWORD,  # type: ignore
+    MAIL_PASSWORD   = settings.MAIL_PASSWORD,  
     MAIL_FROM       = settings.MAIL_FROM,
     MAIL_FROM_NAME  = settings.MAIL_FROM_NAME,
     MAIL_PORT       = settings.MAIL_PORT,
@@ -27,7 +25,7 @@ async def send_reset_password_email(email: str, reset_token: str) -> None:
 
     message = MessageSchema(
         subject     = "Doctor_zenZ — Reset Your Password",
-        recipients  = [email],  # type: ignore
+        recipients  = [email],  
         body        = f"""
             <h2>Reset Your Password</h2>
             <p>You requested to reset your password.</p>
