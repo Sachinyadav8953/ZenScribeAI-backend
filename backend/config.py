@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-
+import os
 
 class Settings(BaseSettings):
 
@@ -25,22 +25,36 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int   = 7
 
+
+
+     #Email
+   
+
+    MAIL_USERNAME = os.environ["MAIL_USERNAME"]
+    MAIL_PASSWORD = os.environ["MAIL_PASSWORD"]
+    MAIL_FROM     = os.environ["MAIL_FROM"]
+    MAIL_FROM_NAME    = os.environ["MAIL_FROM"]
+    MAIL_PORT: int          = 587
+    MAIL_SERVER     = os.environ["MAIL_SERVER"]
+    MAIL_STARTTLS: bool   = True
+    MAIL_SSL_TLS: bool  = False
+    PASSWORD_RESET_EXPIRE_MINUTES: int = 15
+
+    #Deepgram
+    DEEPGRAM_API_KEY=os.environ["Deepgram_Key"]
+
+    #gemini
+
+    GEMINI_API_KEY =  os.environ["GEMINI_API_KEY"]
+    GEMINI_MODEL   =  os.environ["GEMINI_MODEL"]
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
         "extra": "ignore",
-    }   
-    #Email
-   
+    }
 
-    MAIL_USERNAME: str      = ""
-    MAIL_PASSWORD: str      = ""
-    MAIL_FROM: str          = "noreply@doctorzenz.com"
-    MAIL_FROM_NAME: str     = "Doctor_zenZ"
-    MAIL_PORT: int          = 587
-    MAIL_SERVER: str        = "smtp.gmail.com"
-    MAIL_STARTTLS: bool     = True
-    MAIL_SSL_TLS: bool      = False
-    PASSWORD_RESET_EXPIRE_MINUTES: int = 15
+
+
 
 settings = Settings()
