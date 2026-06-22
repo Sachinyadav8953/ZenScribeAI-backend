@@ -2,7 +2,9 @@ from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from config import settings
 
 
-
+print("MAIL_USERNAME =", settings.MAIL_USERNAME)
+print("MAIL_PASSWORD =", settings.MAIL_PASSWORD)
+print("MAIL_FROM =", settings.MAIL_FROM)
 mail_config = ConnectionConfig(
     MAIL_USERNAME   = settings.MAIL_USERNAME,
     MAIL_PASSWORD   = settings.MAIL_PASSWORD,  
@@ -21,8 +23,9 @@ fm = FastMail(mail_config)
 
 async def send_reset_password_email(email: str, reset_token: str) -> None:
 
-    reset_link = f"http://localhost:3000/reset-password?token={reset_token}"
-
+    #reset_link = f"http://localhost:3000/reset-password?token={reset_token}"
+    reset_link = f"http://127.0.0.1:8000/auth/reset-password?token={reset_token}"
+    print("Reset Link:", reset_link)
     message = MessageSchema(
         subject     = "Doctor_zenZ — Reset Your Password",
         recipients  = [email],  
@@ -35,5 +38,7 @@ async def send_reset_password_email(email: str, reset_token: str) -> None:
         """,
         subtype     = MessageType.html      
     )
+    print("Sending email to:", email)
 
-    await fm.send_message(message)          
+    await fm.send_message(message)  
+    print("Email sent successfully")        

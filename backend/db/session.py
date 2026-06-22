@@ -12,7 +12,7 @@ DATABASE_URL = settings.DATABASE_URL
 class Base(DeclarativeBase):
     pass
 
-
+print("DATABASE_URL =", DATABASE_URL)
 engine = create_async_engine(
     DATABASE_URL,
     pool_size=20,          
@@ -31,7 +31,6 @@ AsyncSessionLocal = async_sessionmaker(
     expire_on_commit=False,
     autoflush=False,       
 )
-
 
 
 async def init_db():
