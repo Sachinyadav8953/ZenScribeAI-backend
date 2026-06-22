@@ -33,7 +33,7 @@ class User(Base):
     __tablename__ = "users"
 
     id              : Mapped[int]           = mapped_column(Integer, primary_key=True, autoincrement=True, index=True)
-    uuid            : Mapped[uuid_module.UUID]     = mapped_column(UUID(as_uuid=True), default=uuid_module.uuid4, unique=True, index=True)
+    uuid            : Mapped[uuid_module.UUID]     = mapped_column(UUID(as_uuid=True), default=uuid_module.uuid4, unique=True)
     full_name       : Mapped[str]           = mapped_column(String(100), nullable=False)
     email           : Mapped[str]           = mapped_column(String(255), nullable=False, unique=True, index=True)
     hashed_password : Mapped[str]           = mapped_column(String(255), nullable=False)

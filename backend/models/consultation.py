@@ -32,7 +32,7 @@ class Consultation(Base):
     __tablename__ = "consultations"
 
     id:   Mapped[int]       = mapped_column(Integer, primary_key=True, autoincrement=True, index=True)
-    uuid: Mapped[uuid_module.UUID] = mapped_column(UUID(as_uuid=True), default=uuid_module.uuid4, unique=True, nullable=False, index=True)
+    uuid: Mapped[uuid_module.UUID] = mapped_column(UUID(as_uuid=True), default=uuid_module.uuid4, unique=True, nullable=False)
 
     doctor_id: Mapped[uuid_module.UUID] = mapped_column(
         UUID(as_uuid=True),
