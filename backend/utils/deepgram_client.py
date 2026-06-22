@@ -1,5 +1,3 @@
-# utils/deepgram_client.py
-
 from deepgram import AsyncDeepgramClient
 from config import settings
 import typing
