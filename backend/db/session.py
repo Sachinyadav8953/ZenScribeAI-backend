@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker
 )
 from sqlalchemy.orm import DeclarativeBase
-# pyrefly: ignore [missing-import]
+
 from config import settings
 
 DATABASE_URL = settings.DATABASE_URL
@@ -22,6 +22,8 @@ engine = create_async_engine(
     echo=False,            
 )
 
+
+
 # Async session factory
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
@@ -30,10 +32,18 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False,       
 )
 
+
+
 async def init_db():
-    from models.user import User  
+    from models.user import User 
+    from models.consultation import Consultation    
+    from models.transcript import Transcript        
+    from models.soap_note import SoapNote    
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+
+
 #database dependency
 async def get_db():
     async with AsyncSessionLocal() as session:
