@@ -1,4 +1,3 @@
-# utils/gemini_client.py
 
 from google import genai
 from config import settings
