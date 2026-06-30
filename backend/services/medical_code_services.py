@@ -4,7 +4,7 @@ from google.genai import types
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
-
+from schemas.medical_code import MedicalCodeSelect
 from models.medical_code import MedicalCode, CodeType
 from models.soap_note import SoapNote
 from models.consultation import Consultation, ConsultationStatus
@@ -96,7 +96,7 @@ async def generate_medical_codes(
             detail="SOAP note must be approved before generating medical codes"
         )
 
-    parsed_response = None
+    parsed_text :str|None=None
 
     try:
         gemini   = get_gemini_client()
@@ -109,7 +109,14 @@ async def generate_medical_codes(
                 response_mime_type = "application/json",
             )
         )
-        parsed_response = json.loads(response.text)
+        
+        parsed_text=response.text
+        if parsed_text is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Gemini returned an empty response."
+            )
+        parsed_response = json.loads(parsed_text)
 
     except Exception as e:
         logger.error(f"Error generating medical codes: {str(e)}")
@@ -144,19 +151,74 @@ async def generate_medical_codes(
 
 
 
-def get_medical_code(consultation_id:str,current_doctor:User,db:AsyncSession) ->    MedicalCode:
-    result = db.execute(
-        select(MedicalCode).where(MedicalCode.consultation_id == consultation_id)
+async def get_medical_codes(
+    consultation_uuid: str,
+    current_doctor: User,
+    db: AsyncSession
+) -> list[MedicalCode]:
+
+    consultation_res = await db.execute(
+        select(Consultation).where(Consultation.uuid == consultation_uuid)
     )
-    codes=result.scalars_one_or_none()
-    if not codes:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medical code not found")
+    consultation = consultation_res.scalar_one_or_none()
 
-    if str(codes.uuid) != str(current_doctor.uuid):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not Authorised")
+    if not consultation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Consultation not found"
+        )
+
+    if str(consultation.doctor_id) != str(current_doctor.uuid):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not Authorised"
+        )
+
+    result = await db.execute(
+        select(MedicalCode)
+        .where(MedicalCode.consultation_id == consultation_uuid)
+        .order_by(MedicalCode.code_type)
+    )
+    return list(result.scalars().all())
 
 
+async def select_medical_code(
+    code_uuid: str,
+    data: MedicalCodeSelect,
+    current_doctor: User,
+    db: AsyncSession
+) -> MedicalCode:
 
-    return codes
+    result = await db.execute(
+        select(MedicalCode).where(MedicalCode.uuid == code_uuid)
+    )
+    medical_code = result.scalar_one_or_none()
 
+    if not medical_code:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Medical code not found"
+        )
 
+    consultation_res = await db.execute(
+        select(Consultation).where(Consultation.uuid == medical_code.consultation_id)
+    )
+    consultation = consultation_res.scalar_one_or_none()
+
+    if not consultation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Consultation not found"
+        )
+
+    if str(consultation.doctor_id) != str(current_doctor.uuid):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not Authorised"
+        )
+
+    medical_code.is_selected = data.is_selected
+    await db.commit()
+    await db.refresh(medical_code)
+
+    return medical_code
