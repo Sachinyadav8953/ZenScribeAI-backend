@@ -94,7 +94,6 @@ async def generate_soap_note(
 
 
 
-    #build full transcripttext
     transcript_text = "\n".join([
         f"{chunk.speaker.upper()}: {chunk.text}"
         for chunk in transcripts
@@ -103,7 +102,7 @@ async def generate_soap_note(
 
 
 
-    #call geminiapi
+    
     response_text: str | None = None
     try:
         gemini  = get_gemini_client()
@@ -187,7 +186,8 @@ async def update_soap_note(
         select(SoapNote).where(SoapNote.consultation_id == consultation_uuid)
     )
     soap_note = result.scalar_one_or_none()
-
+    if(consultation_uuid)!=str(current_doctor.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to perform this operation")
     if not soap_note:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SOAP note not found")
 
@@ -217,7 +217,8 @@ async def approve_soap_note(
         select(SoapNote).where(SoapNote.consultation_id == consultation_uuid)
     )
     soap_note = result.scalar_one_or_none()
-
+    if (consultation_uuid)!=str(current_doctor.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to perform this operation")
     if not soap_note:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SOAP note not found")
 
