@@ -28,15 +28,16 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int   = 7
 
     # ── Email ──
-    MAIL_USERNAME: str               = ""
-    MAIL_PASSWORD: str               = ""
-    MAIL_FROM: str                   = ""
-    MAIL_FROM_NAME: str              = "Doctor_zenZ"
-    MAIL_PORT: int                   = 587
-    MAIL_SERVER: str                 = "smtp.gmail.com"
-    MAIL_STARTTLS: bool              = True
-    MAIL_SSL_TLS: bool               = False
-    PASSWORD_RESET_EXPIRE_MINUTES: int = 15
+    MAIL_USERNAME:   str  = ""
+    MAIL_PASSWORD:   str  = ""
+    MAIL_FROM:       str  = "noreply@doctorzenz.com"
+    MAIL_FROM_NAME:  str  = "Doctor_zenZ"
+    MAIL_PORT:       int  = 587
+    MAIL_SERVER:     str  = "smtp.gmail.com"
+    MAIL_STARTTLS:   bool = True
+    MAIL_SSL_TLS:    bool = False
+    EMAIL_RESET_EXPIRE_MINUTES: int = 15
+    EMAIL_VERIFY_EXPIRE_HOURS: int = 24
 
     # ── Deepgram ──
     DEEPGRAM_API_KEY: str            = Field(default="", validation_alias="Deepgram_Key")
