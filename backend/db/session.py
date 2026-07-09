@@ -37,7 +37,8 @@ async def init_db():
     from models.user import User 
     from models.consultation import Consultation    
     from models.transcript import Transcript        
-    from models.soap_note import SoapNote    
+    from models.soap_note import SoapNote 
+    from models.fhir_record import FHIRRecord   
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 

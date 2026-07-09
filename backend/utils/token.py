@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
-from jose import jwt
+from jose import jwt,JWTError
+from fastapi import HTTPException,status
 from config import settings
 
 
@@ -27,6 +28,11 @@ def create_refresh_token(data: dict) -> str:
 
 
 def decode_token(token: str) -> dict:
-
-    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-    return payload
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        return payload
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token is invalid or expired"
+        )
