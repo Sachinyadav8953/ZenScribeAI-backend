@@ -1,5 +1,3 @@
-# services/fhir_service.py
-
 import base64
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession

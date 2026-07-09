@@ -104,3 +104,8 @@ class UserResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+#Refresh Token Request
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str

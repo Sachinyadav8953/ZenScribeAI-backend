@@ -3,12 +3,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from fastapi import HTTPException, status
 from models.user import User
-from schemas.user import UserCreate,UserLogin,TokenResponse,ResetPasswordRequest
+from schemas.user import UserCreate,UserLogin,TokenResponse,ResetPasswordRequest,RefreshTokenRequest
 from utils.password import hash_password,verify_password
 from utils.token import create_access_token,create_refresh_token
 from utils.email import send_reset_password_email,send_verification_email
+from utils.token import decode_token
 import secrets
 from config import settings
+from jose import JWTError
+from fastapi import Request
 
 
 #Sign Up
@@ -105,6 +108,16 @@ async def login_user(
         token_type    = "bearer"
     )
 
+#Logged out
+
+async def logged_out(current_user:User,db:AsyncSession,request:Request)->dict:
+    
+    current_user.last_login=datetime.now(timezone.utc)
+    current_user.last_login_ip=request.client.host if request.client else None
+    current_user.last_login_device=request.headers.get("User-Agent",None)
+    await db.commit()
+    return {"message":"User logged out successfully"}
+
 
 #forget Password
 
@@ -177,3 +190,49 @@ async def verify_email(token: str, db: AsyncSession) -> dict:
     await db.commit()
 
     return {"message": "Email verified successfully. You can now login."}
+
+
+
+async def refresh_token_service(refresh_token: str) -> TokenResponse:
+    try:
+        payload = decode_token(refresh_token)
+
+        user_id = payload.get("user_id")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload"
+            )
+
+        if payload.get("type") != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type — must be refresh token"
+            )
+
+        new_access_token = create_access_token(payload)
+
+        return TokenResponse(
+            access_token  = new_access_token,
+            refresh_token = refresh_token,     
+            token_type    = "bearer",
+            expires_in    = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        )
+
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token is invalid or expired"
+        )
+    except HTTPException:
+        raise                   
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+    
+
+
+    
+    

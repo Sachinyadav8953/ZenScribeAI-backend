@@ -1,16 +1,17 @@
-from fastapi import APIRouter, Depends,status,Request,HTTPException
+from fastapi import APIRouter, Depends,status,Request,HTTPException,Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from schemas.user import UserCreate, UserResponse,UserLogin,TokenResponse
-from services.auth_services import register_user,login_user
+from schemas.user import UserCreate, UserResponse,UserLogin,TokenResponse,RefreshTokenRequest
+from services.auth_services import register_user,login_user,refresh_token_service
 from db.session import get_db
 from schemas.user import ForgotPasswordRequest, ResetPasswordRequest
-from services.auth_services import forgot_password, reset_password,verify_email
+from services.auth_services import forgot_password, reset_password,verify_email,logged_out
 from fastapi.security import OAuth2PasswordRequestForm
 from models.user import User
 from config import settings
 from datetime import datetime,timezone,timedelta
 from utils.email import send_verification_email
+from utils.dependencies import get_current_doctor
 import secrets
 
 router=APIRouter(prefix="/auth",tags=["Authentication"])
@@ -23,7 +24,13 @@ async def register(user_data:UserCreate,db:AsyncSession=Depends(get_db)):
     return await register_user(user_data,db)
 
 
-@router.post("/token", response_model=TokenResponse)
+@router.get("/me",response_model=UserResponse)
+async def get_profile(current_doctor:User=Depends(get_current_doctor)):
+    return current_doctor
+
+
+
+'''@router.post("/token", response_model=TokenResponse)
 async def swagger_login(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -37,7 +44,7 @@ async def swagger_login(
         password=form_data.password,
     )
 
-    return await login_user(user_data, db, ip, device)
+    return await login_user(user_data, db, ip, device)'''
 @router.post("/login",status_code=status.HTTP_200_OK,response_model=TokenResponse)
 
 
@@ -49,6 +56,9 @@ async def login(user_data:UserLogin,request: Request,db:AsyncSession=Depends(get
     return await login_user(user_data,db,ip,device  )
 
 
+@router.post("/logout",status_code=status.HTTP_200_OK)
+async def log_out(request:Request,current_doctor:User=Depends(get_current_doctor),db:AsyncSession=Depends(get_db)):
+    return logged_out(current_doctor,db,request)
 
 @router.post("/forgot-password", status_code=status.HTTP_200_OK)
 async def forgot_password_route(
@@ -100,3 +110,12 @@ async def resend_verification(
 
     await send_verification_email(user.email, new_token)
     return {"message": "If this email exists and is unverified you will receive a new link"}
+
+
+@router.post(
+    "/refresh",
+    status_code=status.HTTP_200_OK,
+    response_model=TokenResponse
+)
+async def refresh_token(request_data: RefreshTokenRequest):
+    return await refresh_token_service(request_data.refresh_token)
