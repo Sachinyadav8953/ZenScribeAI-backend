@@ -10,6 +10,9 @@ from config import settings
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+"""oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/auth/token"
+)"""
 
 
 async def get_current_doctor(

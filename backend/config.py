@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str              = ""
     GEMINI_MODEL: str                = "gemini-1.5-flash"
 
+
+
+    FHIR_BASE_URL: str = "https://hapi.fhir.org/baseR4"
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
