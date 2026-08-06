@@ -4,10 +4,10 @@ from urllib.parse import quote_plus
 class Settings(BaseSettings):
 
     #  Database
-    DB_HOST: str     = "localhost"
+    DB_HOST: str     = ""
     DB_PORT: int     = 5432
-    DB_NAME: str     = "doctorzenz"
-    DB_USER: str     = "postgres"
+    DB_NAME: str     = "neondb"
+    DB_USER: str     = "neondb_owner"
     DB_PASSWORD: str = ""
 
     @property
