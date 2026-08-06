@@ -79,3 +79,7 @@ typing-inspection==0.4.2
 tzdata==2026.2
 pyparsing==3.3.2
 annotated-doc==0.0.4
+
+# FHIR (Medical Standards)
+fhir.resources==8.2.0
+fhir_core==1.1.9
