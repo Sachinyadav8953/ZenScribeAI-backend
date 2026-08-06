@@ -4,10 +4,10 @@ from urllib.parse import quote_plus
 class Settings(BaseSettings):
 
     #  Database
-    DB_HOST: str     = "localhost"
+    DB_HOST: str     = ""
     DB_PORT: int     = 5432
-    DB_NAME: str     = "doctorzenz"
-    DB_USER: str     = "postgres"
+    DB_NAME: str     = "neondb"
+    DB_USER: str     = "neondb_owner"
     DB_PASSWORD: str = ""
 
     @property
@@ -28,16 +28,15 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int   = 7
 
     # ── Email ──
-    MAIL_USERNAME:   str  = ""
-    MAIL_PASSWORD:   str  = ""
-    MAIL_FROM:       str  = "noreply@doctorzenz.com"
-    MAIL_FROM_NAME:  str  = "Doctor_zenZ"
-    MAIL_PORT:       int  = 587
-    MAIL_SERVER:     str  = "smtp.gmail.com"
-    MAIL_STARTTLS:   bool = True
-    MAIL_SSL_TLS:    bool = False
-    EMAIL_RESET_EXPIRE_MINUTES: int = 15
-    EMAIL_VERIFY_EXPIRE_HOURS: int = 24
+    MAIL_USERNAME: str               = ""
+    MAIL_PASSWORD: str               = ""
+    MAIL_FROM: str                   = "noreply@doctorzenz.com"
+    MAIL_FROM_NAME: str              = "Doctor_zenZ"
+    MAIL_PORT: int                   = 587
+    MAIL_SERVER: str                 = "smtp.gmail.com"
+    MAIL_STARTTLS: bool              = True
+    MAIL_SSL_TLS: bool               = False
+    PASSWORD_RESET_EXPIRE_MINUTES: int = 15
 
     # ── Deepgram ──
     DEEPGRAM_API_KEY: str            = Field(default="", validation_alias="Deepgram_Key")
