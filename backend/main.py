@@ -5,6 +5,7 @@ from db.session import init_db
 from routes.consultation import router as consultation_router
 from routes.audio import router as audio_router
 from routes.soap import router as soap_router
+from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -13,6 +14,16 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",          # Local frontend
+        "https://your-frontend.vercel.app",  # Production frontend
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(auth_router)
 app.include_router(consultation_router)
 app.include_router(audio_router)
