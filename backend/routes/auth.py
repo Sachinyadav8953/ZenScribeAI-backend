@@ -6,7 +6,7 @@ from services.auth_services import register_user,login_user,refresh_token_servic
 from db.session import get_db
 from schemas.user import ForgotPasswordRequest, ResetPasswordRequest
 from services.auth_services import forgot_password, reset_password,verify_email,logged_out
-from fastapi.security import OAuth2PasswordRequestForm
+
 from models.user import User
 from config import settings
 from datetime import datetime,timezone,timedelta
@@ -46,19 +46,15 @@ async def swagger_login(
 
     return await login_user(user_data, db, ip, device)'''
 @router.post("/login",status_code=status.HTTP_200_OK,response_model=TokenResponse)
-
-
 async def login(user_data:UserLogin,request: Request,db:AsyncSession=Depends(get_db)):
-    ip     = request.client.host if request.client else None
-    device = request.headers.get("user-agent")
-    if not ip and not device:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Invalid Request"    )
-    return await login_user(user_data,db,ip,device  )
+    ip     = request.client.host if request.client else "127.0.0.1"
+    device = request.headers.get("user-agent") or "Unknown Device"
+    return await login_user(user_data,db,ip,device)
 
 
 @router.post("/logout",status_code=status.HTTP_200_OK)
 async def log_out(request:Request,current_doctor:User=Depends(get_current_doctor),db:AsyncSession=Depends(get_db)):
-    return logged_out(current_doctor,db,request)
+    return await logged_out(current_doctor,db,request)
 
 @router.post("/forgot-password", status_code=status.HTTP_200_OK)
 async def forgot_password_route(
