@@ -87,7 +87,7 @@ async def login_user(
             "user_id" : user.id,
             "uuid"    : str(user.uuid),
             "email"   : user.email,
-            "role"    : user.role
+            "role"    : user.role.value if hasattr(user.role, 'value') else user.role
         }
 
     access_token  = create_access_token(token_data)
@@ -214,9 +214,8 @@ async def refresh_token_service(refresh_token: str) -> TokenResponse:
 
         return TokenResponse(
             access_token  = new_access_token,
-            refresh_token = refresh_token,     
+            refresh_token = refresh_token,
             token_type    = "bearer",
-            expires_in    = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         )
 
     except JWTError:
