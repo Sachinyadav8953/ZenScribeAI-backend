@@ -98,7 +98,7 @@ async def get_all_consultations(
 
     result = await db.execute(
         select(Consultation)
-        .where(Consultation.doctor_id == str(current_doctor.uuid))
+        .where(Consultation.doctor_id == current_doctor.uuid)
         .order_by(Consultation.created_at.desc())   
     )
     return result.scalars().all()
