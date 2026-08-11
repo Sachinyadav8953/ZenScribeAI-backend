@@ -45,7 +45,8 @@ async def send_verification_email(email: str, token: str) -> None:
         await fm.send_message(message)
         print(f"[EMAIL] Verification email sent to {email}")
     except Exception as e:
-        print(f"[EMAIL WARNING] Failed to send verification email to {email}: {e}")
+        print(f"[EMAIL ERROR] Failed to send verification email to {email}: {e}")
+        raise RuntimeError(f"Failed to send verification email: {e}")
 
 
 async def send_reset_password_email(email: str, token: str) -> None:
@@ -72,4 +73,5 @@ async def send_reset_password_email(email: str, token: str) -> None:
         await fm.send_message(message)
         print(f"[EMAIL] Password reset email sent to {email}")
     except Exception as e:
-        print(f"[EMAIL WARNING] Failed to send password reset email to {email}: {e}")
+        print(f"[EMAIL ERROR] Failed to send password reset email to {email}: {e}")
+        raise RuntimeError(f"Failed to send password reset email: {e}")

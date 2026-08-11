@@ -48,10 +48,12 @@ async def register_user(user_data:UserCreate, db: AsyncSession)->User:
     )
     
 
+    # Send verification email first. If SMTP/email delivery fails, the transaction is not committed
+    await send_verification_email(new_user.email, verification_token)
+
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
-    await send_verification_email(new_user.email, verification_token)
     return new_user
 
 
