@@ -21,6 +21,12 @@ async def register_user(user_data:UserCreate, db: AsyncSession)->User:
     if existing_user:
         raise HTTPException(status_code=400, detail="User already exit with this email,Please try with another email !")
 
+    if user_data.license_number:
+        result = await db.execute(select(User).where(User.license_number == user_data.license_number))
+        existing_license = result.scalar_one_or_none()
+        if existing_license:
+            raise HTTPException(status_code=400, detail="A doctor with this license number already exists. Please verify your license number.")
+
     hashedPassword=hash_password(user_data.password)
     verification_token = secrets.token_urlsafe(32)
     token_expiry = datetime.now(timezone.utc) + timedelta(
@@ -42,10 +48,12 @@ async def register_user(user_data:UserCreate, db: AsyncSession)->User:
     )
     
 
+    # Send verification email first. If SMTP/email delivery fails, the transaction is not committed
+    await send_verification_email(new_user.email, verification_token)
+
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
-    await send_verification_email(new_user.email, verification_token)
     return new_user
 
 
