@@ -4,8 +4,10 @@ from models.consultation import Consultation
 from models.user import User
 from schemas.consultation import ConsultationCreate, ConsultationResponse,ConsultationUpdate,ConsultationStatus
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from typing import Sequence
 from datetime import datetime, timezone
+from uuid import UUID
 
 async def start_consultation(
     data: ConsultationCreate,
@@ -98,23 +100,30 @@ async def get_all_consultations(
 
     result = await db.execute(
         select(Consultation)
-        .where(Consultation.doctor_id == str(current_doctor.uuid))
+        .where(Consultation.doctor_id == current_doctor.uuid)
         .order_by(Consultation.created_at.desc())   
     )
     return result.scalars().all()
 
 
 
-async def get_one_consultation(consultation_uuid:str,current_doctor:User,db:AsyncSession)->Consultation:
-    result=await db.execute(select(Consultation).where(Consultation.uuid==consultation_uuid))
-    consultation=result.scalar_one_or_none()
+async def get_one_consultation(consultation_uuid: str, current_doctor: User, db: AsyncSession) -> Consultation:
+    try:
+        uuid_obj = UUID(consultation_uuid) if isinstance(consultation_uuid, str) else consultation_uuid
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Consultation not found")
+
+    result = await db.execute(
+        select(Consultation)
+        .options(selectinload(Consultation.transcripts))
+        .where(Consultation.uuid == uuid_obj)
+    )
+    consultation = result.scalar_one_or_none()
     if not consultation:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Consultation not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Consultation not found")
 
-    
-    if str(consultation.doctor_id)!=str(current_doctor.uuid):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You are not authorize to view this consultation")
-
+    if str(consultation.doctor_id) != str(current_doctor.uuid):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to view this consultation")
 
     return consultation
 

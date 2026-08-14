@@ -1,19 +1,19 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
 from models.user import UserRole, Specialization
 from utils.passwordValidators import validate_password_strength, validate_password_match
 
-#signup
+#signup — email removed, license_number is now required
 class UserCreate(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=100)
-    email: EmailStr
+    # email: EmailStr  # REMOVED — no longer collected from user
     password: str = Field(..., min_length=8, max_length=64)
     confirm_password: str
     role: UserRole                           = UserRole.DOCTOR
     specialization: Optional[Specialization] = Field(default=None, validate_default=True)
-    license_number: Optional[str]            = Field(default=None, min_length=5, max_length=50)
+    license_number: str                      = Field(..., min_length=5, max_length=50)
     hospital_name: Optional[str]             = Field(default=None, max_length=150)
     phone_number: Optional[str]              = Field(default=None, pattern=r"^\+?[1-9]\d{9,14}$")
 
@@ -38,16 +38,15 @@ class UserCreate(BaseModel):
         return v
 
 
-#signin
+#signin — uses license_number instead of email
 class UserLogin(BaseModel):
-    email: EmailStr
+    license_number: str = Field(..., min_length=5, max_length=50)
     password: str = Field(..., min_length=8)
 
 
-#ForgotPassword
-
-class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
+# #ForgotPassword — COMMENTED OUT (email-based)
+# class ForgotPasswordRequest(BaseModel):
+#     email: EmailStr
 
 
 #Reset Password
@@ -83,7 +82,7 @@ class TokenResponse(BaseModel):
 class TokenData(BaseModel):
     user_id: int
     uuid: UUID
-    email: EmailStr
+    email: str  # kept as str for internal dummy email
     role: UserRole
 
 #User Response
@@ -92,14 +91,14 @@ class UserResponse(BaseModel):
     id: int
     uuid: UUID
     full_name: str
-    email: EmailStr
+    # email: EmailStr  # REMOVED — not exposed to frontend
     role: UserRole
     specialization: Optional[Specialization] = None
     license_number: Optional[str]            = None
     license_verified: bool
     hospital_name: Optional[str]             = None
     phone_number: Optional[str]              = None
-    is_email_verified: bool
+    # is_email_verified: bool  # REMOVED — no longer relevant
     is_active: bool
     created_at: datetime
 

@@ -41,15 +41,17 @@ async def send_verification_email(email: str, token: str) -> None:
         subtype    = MessageType.html
     )
 
-    await fm.send_message(message)
+    try:
+        await fm.send_message(message)
+        print(f"[EMAIL] Verification email sent to {email}")
+    except Exception as e:
+        print(f"[EMAIL ERROR] Failed to send verification email to {email}: {e}")
+        raise RuntimeError(f"Failed to send verification email: {e}")
 
 
 async def send_reset_password_email(email: str, token: str) -> None:
     reset_link = f"http://localhost:3000/reset-password?token={token}"
 
-    #reset_link = f"http://localhost:3000/reset-password?token={reset_token}"
-    reset_link = f"http://127.0.0.1:8000/auth/reset-password?token={reset_token}"
-    
     message = MessageSchema(
         subject    = "Doctor_zenZ — Reset Your Password",
         recipients = [email],
@@ -67,6 +69,9 @@ async def send_reset_password_email(email: str, token: str) -> None:
         subtype    = MessageType.html
     )
     
-
-    await fm.send_message(message)  
-            
+    try:
+        await fm.send_message(message)
+        print(f"[EMAIL] Password reset email sent to {email}")
+    except Exception as e:
+        print(f"[EMAIL ERROR] Failed to send password reset email to {email}: {e}")
+        raise RuntimeError(f"Failed to send password reset email: {e}")

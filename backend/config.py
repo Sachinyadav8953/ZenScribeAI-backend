@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int   = 7
 
     # ── Email ──
+    RESEND_API_KEY: str              = ""
+    RESEND_FROM_EMAIL: str           = "onboarding@resend.dev"
     MAIL_USERNAME: str               = ""
     MAIL_PASSWORD: str               = ""
     MAIL_FROM: str                   = "noreply@doctorzenz.com"
@@ -37,13 +39,15 @@ class Settings(BaseSettings):
     MAIL_STARTTLS: bool              = True
     MAIL_SSL_TLS: bool               = False
     PASSWORD_RESET_EXPIRE_MINUTES: int = 15
+    EMAIL_RESET_EXPIRE_MINUTES: int   = 15
+    EMAIL_VERIFY_EXPIRE_HOURS: int    = 24
 
     # ── Deepgram ──
     DEEPGRAM_API_KEY: str            = Field(default="", validation_alias="Deepgram_Key")
 
     # ── Gemini (LLM) ──
     GEMINI_API_KEY: str              = ""
-    GEMINI_MODEL: str                = "gemini-1.5-flash"
+    GEMINI_MODEL: str                = "gemini-3.6-flash"
 
 
 

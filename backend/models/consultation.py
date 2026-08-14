@@ -75,7 +75,8 @@ class Consultation(Base):
         "Transcript",
         back_populates="consultation",
         cascade="all, delete-orphan",
-        order_by="Transcript.timestamp_start"
+        order_by="Transcript.timestamp_start",
+        lazy="selectin"
     )
 
     def __repr__(self):
