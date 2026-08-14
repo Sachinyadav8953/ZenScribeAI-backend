@@ -17,11 +17,15 @@ import secrets
 router=APIRouter(prefix="/auth",tags=["Authentication"])
 
 @router.post("/register",status_code=status.HTTP_201_CREATED,response_model=UserResponse)
-
-
 async def register(user_data:UserCreate,db:AsyncSession=Depends(get_db)):
-
-    return await register_user(user_data,db)
+    try:
+        return await register_user(user_data,db)
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Registration error: {str(e)}")
 
 
 @router.get("/me",response_model=UserResponse)
@@ -29,12 +33,18 @@ async def get_profile(current_doctor:User=Depends(get_current_doctor)):
     return current_doctor
 
 
-
 @router.post("/login",status_code=status.HTTP_200_OK,response_model=TokenResponse)
 async def login(user_data:UserLogin,request: Request,db:AsyncSession=Depends(get_db)):
     ip     = request.client.host if request.client else "127.0.0.1"
     device = request.headers.get("user-agent") or "Unknown Device"
-    return await login_user(user_data,db,ip,device)
+    try:
+        return await login_user(user_data,db,ip,device)
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Login error: {str(e)}")
 
 
 @router.post("/logout",status_code=status.HTTP_200_OK)
