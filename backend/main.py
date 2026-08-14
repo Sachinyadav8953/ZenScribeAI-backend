@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from routes.auth import router as auth_router
+import models
 from db.session import init_db
 from routes.consultation import router as consultation_router
 from routes.audio import router as audio_router
@@ -17,8 +18,8 @@ app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",          # Local frontend
-        "https://your-frontend.vercel.app",  # Production frontend
+        "http://localhost:3000",          
+        "https://your-frontend.vercel.app",  
     ],
     allow_credentials=True,
     allow_methods=["*"],

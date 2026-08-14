@@ -27,9 +27,11 @@ async def generate(
     return await generate_soap_note(consultation_uuid, current_doctor, db)
 
 
+from typing import Optional
+
 @router.get("/{consultation_uuid}",
     status_code=status.HTTP_200_OK,
-    response_model=SoapNoteResponse
+    response_model=Optional[SoapNoteResponse]
 )
 async def get_note(
     consultation_uuid: str,
