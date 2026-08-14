@@ -12,10 +12,24 @@ class UserCreate(BaseModel):
     password: str = Field(..., min_length=8, max_length=64)
     confirm_password: str
     role: UserRole                           = UserRole.DOCTOR
-    specialization: Optional[Specialization] = Field(default=None, validate_default=True)
+    specialization: Optional[Specialization] = None
     license_number: str                      = Field(..., min_length=5, max_length=50)
-    hospital_name: Optional[str]             = Field(default=None, max_length=150)
-    phone_number: Optional[str]              = Field(default=None, pattern=r"^\+?[1-9]\d{9,14}$")
+    hospital_name: Optional[str]             = None
+    phone_number: Optional[str]              = None
+
+    @field_validator("phone_number", "hospital_name", mode="before")
+    @classmethod
+    def clean_empty_strings(cls, v):
+        if not v or (isinstance(v, str) and not v.strip()):
+            return None
+        return v
+
+    @field_validator("specialization", mode="before")
+    @classmethod
+    def clean_specialization(cls, v):
+        if not v or (isinstance(v, str) and not v.strip()):
+            return Specialization.GENERAL_PHYSICIAN
+        return v
 
     @field_validator("confirm_password")
     @classmethod
@@ -28,13 +42,6 @@ class UserCreate(BaseModel):
     @classmethod
     def password_strength(cls, v):
         validate_password_strength(v)   
-        return v
-
-    @field_validator("specialization")
-    @classmethod
-    def doctor_needs_specialization(cls, v, info):
-        if info.data.get("role") == UserRole.DOCTOR and v is None:
-            raise ValueError("Specialization is required for doctors")
         return v
 
 
