@@ -6,7 +6,7 @@ from models.user import User
 from schemas.user import UserCreate,UserLogin,TokenResponse,ResetPasswordRequest,RefreshTokenRequest
 from utils.password import hash_password,verify_password
 from utils.token import create_access_token,create_refresh_token
-from utils.email import send_reset_password_email,send_verification_email
+# from utils.email import send_reset_password_email,send_verification_email  # COMMENTED OUT — email disabled
 from utils.token import decode_token
 import secrets
 from config import settings
@@ -14,42 +14,37 @@ from jose import JWTError
 from fastapi import Request
 
 
-#Sign Up
+#Sign Up — authenticates via license_number, auto-generates dummy email
 async def register_user(user_data:UserCreate, db: AsyncSession)->User:
-    result=await db.execute(select(User).where(User.email==user_data.email))
-    existing_user=result.scalar_one_or_none()
-    if existing_user:
-        raise HTTPException(status_code=400, detail="User already exit with this email,Please try with another email !")
+    # Check for duplicate license_number (primary identifier now)
+    result = await db.execute(select(User).where(User.license_number == user_data.license_number))
+    existing_license = result.scalar_one_or_none()
+    if existing_license:
+        raise HTTPException(status_code=400, detail="A doctor with this license number already exists. Please verify your license number.")
 
-    if user_data.license_number:
-        result = await db.execute(select(User).where(User.license_number == user_data.license_number))
-        existing_license = result.scalar_one_or_none()
-        if existing_license:
-            raise HTTPException(status_code=400, detail="A doctor with this license number already exists. Please verify your license number.")
+    # Auto-generate a unique dummy email from the license number
+    auto_email = f"{user_data.license_number.lower().replace(' ', '_')}@zenscribe.local"
+
+    # Check the generated email doesn't collide (edge case safety)
+    result = await db.execute(select(User).where(User.email == auto_email))
+    if result.scalar_one_or_none():
+        auto_email = f"{user_data.license_number.lower().replace(' ', '_')}_{secrets.token_hex(4)}@zenscribe.local"
 
     hashedPassword=hash_password(user_data.password)
-    verification_token = secrets.token_urlsafe(32)
-    token_expiry = datetime.now(timezone.utc) + timedelta(
-        hours=settings.EMAIL_VERIFY_EXPIRE_HOURS
-    )
 
     new_user=User(
         full_name        = user_data.full_name,
-        email            = user_data.email,
+        email            = auto_email,  # auto-generated dummy email
         hashed_password  = hashedPassword,
         role             = user_data.role,
         specialization   = user_data.specialization,
         license_number   = user_data.license_number,
         hospital_name    = user_data.hospital_name,
         phone_number     = user_data.phone_number, 
-        is_email_verified          = False,
-        email_verification_token   = verification_token,
-        email_verification_expires = token_expiry,
+        is_email_verified          = True,   # auto-verified (no email verification)
+        email_verification_token   = None,
+        email_verification_expires = None,
     )
-    
-
-    # Send verification email first. If SMTP/email delivery fails, the transaction is not committed
-    await send_verification_email(new_user.email, verification_token)
 
     db.add(new_user)
     await db.commit()
@@ -57,7 +52,7 @@ async def register_user(user_data:UserCreate, db: AsyncSession)->User:
     return new_user
 
 
-#Sign In
+#Sign In — authenticates via license_number
 async def login_user(
     user_data: UserLogin,
     db: AsyncSession,
@@ -65,8 +60,8 @@ async def login_user(
     request_device: str | None = None 
 ) -> TokenResponse:
 
-    result =await db.execute(select(User).where(User.email==user_data.email))
-    user=result.scalar_one_or_none()
+    result = await db.execute(select(User).where(User.license_number == user_data.license_number))
+    user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Invalid Credentials")
     if not verify_password(user_data.password,user.hashed_password):
@@ -85,12 +80,13 @@ async def login_user(
             detail="Account no longer exists."
         )
     
+    # Email verification check removed — users are auto-verified on registration
+    # if not user.is_email_verified:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Please verify your email before logging in."
+    #     )
 
-    if not user.is_email_verified:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Please verify your email before logging in."
-        )
     token_data = {
             "user_id" : user.id,
             "uuid"    : str(user.uuid),
@@ -127,22 +123,20 @@ async def logged_out(current_user:User,db:AsyncSession,request:Request)->dict:
     return {"message":"User logged out successfully"}
 
 
-#forget Password
-
-async def forgot_password(email: str, db: AsyncSession) -> dict:
-    result =await db.execute(select(User).where(User.email==email))
-    user=result.scalar_one_or_none()
-    if not user:
-        return {"message": "If this email exists you will receive a reset link"}
-    
-    reset_token = secrets.token_urlsafe(32)
-    user.reset_password_token   = reset_token
-    user.reset_password_expires = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.EMAIL_RESET_EXPIRE_MINUTES
-    )
-    await db.commit()
-    await send_reset_password_email(user.email,reset_token)
-    return {"message": "If this email exists you will receive a reset link"}
+# #forget Password — COMMENTED OUT (email-based)
+# async def forgot_password(email: str, db: AsyncSession) -> dict:
+#     result =await db.execute(select(User).where(User.email==email))
+#     user=result.scalar_one_or_none()
+#     if not user:
+#         return {"message": "If this email exists you will receive a reset link"}
+#     reset_token = secrets.token_urlsafe(32)
+#     user.reset_password_token   = reset_token
+#     user.reset_password_expires = datetime.now(timezone.utc) + timedelta(
+#         minutes=settings.EMAIL_RESET_EXPIRE_MINUTES
+#     )
+#     await db.commit()
+#     await send_reset_password_email(user.email,reset_token)
+#     return {"message": "If this email exists you will receive a reset link"}
 
 
 async def reset_password(reset_data: ResetPasswordRequest, db: AsyncSession) -> dict:
@@ -168,36 +162,29 @@ async def reset_password(reset_data: ResetPasswordRequest, db: AsyncSession) -> 
     
 
 
-
-async def verify_email(token: str, db: AsyncSession) -> dict:
-
-    result = await db.execute(
-        select(User).where(User.email_verification_token == token)
-    )
-    user = result.scalar_one_or_none()
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid verification token"
-        )
-
-    if user.is_email_verified:
-        return {"message": "Email already verified. Please login."}
-
-    if user.email_verification_expires is None or datetime.now(timezone.utc) > user.email_verification_expires:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Verification token expired. Please register again or request a new link."
-        )
-
-    user.is_email_verified          = True
-    user.email_verification_token   = None      
-    user.email_verification_expires = None
-
-    await db.commit()
-
-    return {"message": "Email verified successfully. You can now login."}
+# verify_email — COMMENTED OUT (email verification disabled)
+# async def verify_email(token: str, db: AsyncSession) -> dict:
+#     result = await db.execute(
+#         select(User).where(User.email_verification_token == token)
+#     )
+#     user = result.scalar_one_or_none()
+#     if not user:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Invalid verification token"
+#         )
+#     if user.is_email_verified:
+#         return {"message": "Email already verified. Please login."}
+#     if user.email_verification_expires is None or datetime.now(timezone.utc) > user.email_verification_expires:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Verification token expired. Please register again or request a new link."
+#         )
+#     user.is_email_verified          = True
+#     user.email_verification_token   = None
+#     user.email_verification_expires = None
+#     await db.commit()
+#     return {"message": "Email verified successfully. You can now login."}
 
 
 
@@ -238,8 +225,3 @@ async def refresh_token_service(refresh_token: str) -> TokenResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
-    
-
-
-    
-    

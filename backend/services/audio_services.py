@@ -1,15 +1,15 @@
 import asyncio
+import uuid as uuid_module
+import logging
 from deepgram.core import EventType
 from deepgram.listen.v1 import ListenV1Results
-from fastapi import WebSocket
+from fastapi import WebSocket, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from models.consultation import Consultation, ConsultationStatus
 from models.transcript import Transcript, SpeakerEnum
 from utils.deepgram_client import get_deepgram_client, get_live_options
-from fastapi import HTTPException, status
-import logging
 
 logger = logging.getLogger("doctor_zenz.audio")
 
@@ -20,8 +20,6 @@ async def handle_audio_stream(
     current_doctor_uuid: str,
     db: AsyncSession
 ):
-
-    
     result = await db.execute(
         select(Consultation).where(Consultation.uuid == consultation_uuid)
     )
@@ -39,8 +37,7 @@ async def handle_audio_stream(
         await websocket.close(code=4000, reason="Consultation is not in progress")
         return
 
-
-    deepgram      = get_deepgram_client()
+    deepgram = get_deepgram_client()
     transcript_buffer = []
 
     async def on_transcript(result, **kwargs):
@@ -59,20 +56,29 @@ async def handle_audio_stream(
             speaker_id = words[0].speaker if words else 0
             speaker = SpeakerEnum.DOCTOR if speaker_id == 0 else SpeakerEnum.PATIENT
 
-            transcript_buffer.append({
-                "speaker"         : speaker,
-                "text"            : sentence,
-                "timestamp_start" : result.start,
-                "timestamp_end"   : result.start + result.duration,
-                "confidence"      : alternative.confidence,
-            })
+            chunk_data = {
+                "uuid": str(uuid_module.uuid4()),
+                "speaker": speaker.value if hasattr(speaker, 'value') else str(speaker),
+                "text": sentence,
+                "timestamp_start": result.start,
+                "timestamp_end": result.start + result.duration,
+                "confidence": alternative.confidence,
+            }
+
+            transcript_buffer.append(chunk_data)
+
+            # Broadcast chunk over WebSocket to frontend in real-time
+            try:
+                await websocket.send_json(chunk_data)
+            except Exception as send_err:
+                logger.error(f"Error sending live transcript to WebSocket: {send_err}")
 
     async def on_error(error, **kwargs):
         logger.error(f"Deepgram error: {error}")
 
     async with deepgram.listen.v1.connect(**get_live_options()) as dg_connection:
         dg_connection.on(EventType.MESSAGE, on_transcript)
-        dg_connection.on(EventType.ERROR,   on_error)
+        dg_connection.on(EventType.ERROR, on_error)
 
         listener_task = asyncio.create_task(dg_connection.start_listening())
 
@@ -92,11 +98,11 @@ async def handle_audio_stream(
             
             await listener_task
 
-        
         for chunk in transcript_buffer:
+            speaker_enum = SpeakerEnum.DOCTOR if chunk["speaker"] == "doctor" else SpeakerEnum.PATIENT
             transcript = Transcript(
                 consultation_id = consultation.uuid,
-                speaker         = chunk["speaker"],
+                speaker         = speaker_enum,
                 text            = chunk["text"],
                 timestamp_start = chunk["timestamp_start"],
                 timestamp_end   = chunk["timestamp_end"],

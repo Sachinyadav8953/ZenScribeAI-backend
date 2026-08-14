@@ -47,7 +47,7 @@ class Settings(BaseSettings):
 
     # ── Gemini (LLM) ──
     GEMINI_API_KEY: str              = ""
-    GEMINI_MODEL: str                = "gemini-1.5-flash"
+    GEMINI_MODEL: str                = "gemini-3.6-flash"
 
 
 
