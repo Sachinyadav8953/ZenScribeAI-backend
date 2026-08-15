@@ -14,8 +14,6 @@ from jose import JWTError
 from fastapi import Request
 
 
-from models.user import User, UserRole, Specialization
-
 #Sign Up — authenticates via license_number, auto-generates dummy email
 async def register_user(user_data:UserCreate, db: AsyncSession)->User:
     # Check for duplicate license_number (primary identifier now)
@@ -34,20 +32,12 @@ async def register_user(user_data:UserCreate, db: AsyncSession)->User:
 
     hashedPassword=hash_password(user_data.password)
 
-    role_val = UserRole(user_data.role) if isinstance(user_data.role, str) else user_data.role
-    spec_val = None
-    if user_data.specialization:
-        try:
-            spec_val = Specialization(user_data.specialization) if isinstance(user_data.specialization, str) else user_data.specialization
-        except ValueError:
-            spec_val = Specialization.OTHER
-
     new_user=User(
         full_name        = user_data.full_name,
         email            = auto_email,  # auto-generated dummy email
         hashed_password  = hashedPassword,
-        role             = role_val,
-        specialization   = spec_val,
+        role             = user_data.role,
+        specialization   = user_data.specialization,
         license_number   = user_data.license_number,
         hospital_name    = user_data.hospital_name,
         phone_number     = user_data.phone_number, 
