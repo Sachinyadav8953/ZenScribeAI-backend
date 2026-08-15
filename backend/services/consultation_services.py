@@ -44,8 +44,13 @@ async def update_consultation(
     db: AsyncSession
 ) -> Consultation:
 
+    try:
+        uuid_obj = UUID(consultation_uuid) if isinstance(consultation_uuid, str) else consultation_uuid
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Consultation not found")
+
     result = await db.execute(
-        select(Consultation).where(Consultation.uuid == consultation_uuid)
+        select(Consultation).where(Consultation.uuid == uuid_obj)
     )
     consultation = result.scalar_one_or_none()
 
@@ -55,21 +60,12 @@ async def update_consultation(
             detail="Consultation not found"
         )
 
-   
     if str(consultation.doctor_id) != str(current_doctor.uuid):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not authorized to update this consultation"
         )
 
-    
-    if consultation.status != ConsultationStatus.IN_PROGRESS:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only in progress consultations can be updated"
-        )
-
-    
     if data.patient_name is not None:
         consultation.patient_name = data.patient_name
 
@@ -84,7 +80,6 @@ async def update_consultation(
 
     if data.chief_complaint is not None:
         consultation.chief_complaint = data.chief_complaint
-
 
     await db.commit()
     await db.refresh(consultation)
