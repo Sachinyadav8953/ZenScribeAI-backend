@@ -34,24 +34,13 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 async def init_db():
-    import models 
-    from sqlalchemy import text  
+    from models.user import User 
+    from models.consultation import Consultation    
+    from models.transcript import Transcript        
+    from models.soap_note import SoapNote 
+    from models.fhir_record import FHIRRecord   
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        # Safe column migration for existing tables in production
-        migrations = [
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS license_number VARCHAR(50);",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS license_verified BOOLEAN DEFAULT FALSE;",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS hospital_name VARCHAR(150);",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20);",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_image VARCHAR(500);",
-            "ALTER TABLE users ALTER COLUMN email DROP NOT NULL;",
-        ]
-        for query in migrations:
-            try:
-                await conn.execute(text(query))
-            except Exception as e:
-                print(f"Schema migration statement note ({query}): {e}")
 
 
 

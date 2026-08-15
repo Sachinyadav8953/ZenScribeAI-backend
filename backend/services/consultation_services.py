@@ -174,8 +174,13 @@ async def delete_consultation(
     db: AsyncSession
 ) -> dict:
 
+    try:
+        uuid_obj = UUID(consultation_uuid) if isinstance(consultation_uuid, str) else consultation_uuid
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Consultation not found")
+
     result = await db.execute(
-        select(Consultation).where(Consultation.uuid == consultation_uuid)
+        select(Consultation).where(Consultation.uuid == uuid_obj)
     )
     consultation = result.scalar_one_or_none()
 
