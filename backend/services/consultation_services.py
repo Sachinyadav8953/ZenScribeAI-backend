@@ -66,6 +66,12 @@ async def update_consultation(
             detail="You are not authorized to update this consultation"
         )
 
+    if consultation.status != ConsultationStatus.IN_PROGRESS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only in-progress consultations can be updated"
+        )
+
     if data.patient_name is not None:
         consultation.patient_name = data.patient_name
 
