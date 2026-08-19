@@ -23,7 +23,6 @@ psycopg2-binary==2.9.12
 
 # Authentication & Security
 bcrypt==5.0.0
-passlib==1.7.4
 python-jose==3.5.0
 cryptography==47.0.0
 cffi==2.0.0
