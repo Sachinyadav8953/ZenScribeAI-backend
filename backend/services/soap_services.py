@@ -100,15 +100,35 @@ async def generate_soap_note(
     try:
         gemini = get_gemini_client()
 
-        response = gemini.models.generate_content(
-            model    = settings.GEMINI_MODEL,       
-            contents = build_prompt(transcript_text),
-            config   = types.GenerateContentConfig(
-                temperature      = 0.1,             
-                max_output_tokens = 2048,
-                response_mime_type = "application/json",  
+        model_name = settings.GEMINI_MODEL or "gemini-3.6-flash"
+        if "2.0-flash" in model_name:
+            model_name = "gemini-3.6-flash"
+
+        try:
+            response = gemini.models.generate_content(
+                model    = model_name,       
+                contents = build_prompt(transcript_text),
+                config   = types.GenerateContentConfig(
+                    temperature      = 0.1,             
+                    max_output_tokens = 2048,
+                    response_mime_type = "application/json",  
+                )
             )
-        )
+        except Exception as model_err:
+            if "2.0-flash" in str(model_err) or "404" in str(model_err):
+                logger.warning(f"Model {model_name} failed, falling back to gemini-3.6-flash: {model_err}")
+                response = gemini.models.generate_content(
+                    model    = "gemini-3.6-flash",
+                    contents = build_prompt(transcript_text),
+                    config   = types.GenerateContentConfig(
+                        temperature      = 0.1,
+                        max_output_tokens = 2048,
+                        response_mime_type = "application/json",
+                    )
+                )
+            else:
+                raise model_err
+
         response_text = response.text 
 
         if response_text is None:
