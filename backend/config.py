@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, field_validator
 from urllib.parse import quote_plus
+
 class Settings(BaseSettings):
 
     #  Database
@@ -49,7 +50,12 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str              = ""
     GEMINI_MODEL: str                = "gemini-3.6-flash"
 
-
+    @field_validator("GEMINI_MODEL", mode="before")
+    @classmethod
+    def validate_gemini_model(cls, v: str) -> str:
+        if not v or "2.0-flash" in str(v):
+            return "gemini-3.6-flash"
+        return v
 
     FHIR_BASE_URL: str = "https://hapi.fhir.org/baseR4"
 
